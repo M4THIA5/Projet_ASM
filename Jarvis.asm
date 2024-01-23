@@ -46,7 +46,11 @@ width:         	resd	1
 height:        	resd	1
 window:		resq	1
 gc:		resq	1
-reponse: resb 1
+
+
+nbPoint: resb 1
+tabCoordonnee: resq 1  ; Pointeur vers le tableau de tableaux
+index:         resd 1  ; Variable pour stocker l'index lors du remplissage du tableau
 
 section .data
 
@@ -72,32 +76,48 @@ main:
 
 push rbp
 
-while:
+boucle_select_nb_point:
 	mov rdi, question
 	mov rax,0
 	call printf
 	mov rdi, fmt_scanf_int
-	mov rsi, reponse
+	mov rsi, nbPoint
 	mov rax,0
 	call scanf
 
-	cmp byte[reponse],5
+	cmp byte[nbPoint],5
 	jb error_small
-	cmp byte[reponse],50
+	cmp byte[nbPoint],50
 	ja error_big
-	jmp creationWindow
+	jmp creationTabCoordonnee
 
 error_small:
 	mov rdi, message_error_small
 	mov rax,0
 	call printf
-	jmp while
+	jmp boucle_select_nb_point
 
 error_big:
 	mov rdi, message_error_big
 	mov rax, 0
 	call printf
-	jmp while
+	jmp boucle_select_nb_point
+	
+
+creationTabCoordonnee:
+    ; Allocation dynamique de mémoire pour le tableau de tableaux
+    mov rdi, qword [nbPoint]
+    imul rdi, 2  ; Deux coordonnées (x, y) pour chaque point
+    imul rdi, 4  ; Chaque coordonnée est un entier (4 octets)
+    push rdi
+    call malloc
+    add rsp, 8
+    mov qword [tabCoordonnee], rax
+    ; Initialiser l'index à 0
+    mov dword [index], 0
+    
+    jmp creationWindow
+
 
 creationWindow:
 
@@ -165,49 +185,8 @@ jmp boucle
 ;#########################################
 dessin:
 
-;couleur du point 1
-mov rdi,qword[display_name]
-mov rsi,qword[gc]
-mov edx,0xFF0000	; Couleur du crayon ; rouge
-call XSetForeground
-
-; Dessin d'un point rouge sous forme d'un petit rond : coordonnées (100,200)
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov rcx,100		; coordonnée en x du point
-sub ecx,3
-mov r8,200 		; coordonnée en y du point
-sub r8,3
-mov r9,6
-mov rax,23040
-push rax
-push 0
-push r9
-call XFillArc
-
-;couleur du point 2
-mov rdi,qword[display_name]
-mov rsi,qword[gc]
-mov edx,0x00FF00	; Couleur du crayon ; vert
-call XSetForeground
-
-; Dessin d'un point vert sous forme d'un petit rond : coordonnées (100,250)
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov rcx,100		; coordonnée en x du point
-sub ecx,3
-mov r8,250 		; coordonnée en y du point
-sub r8,3
-mov r9,6
-mov rax,23040
-push rax
-push 0
-push r9
-call XFillArc
-
-;couleur du point 3
+point:
+;couleur du points
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
 mov edx,0x0000FF	; Couleur du crayon ; bleu
@@ -221,34 +200,14 @@ mov rcx,200		; coordonnée en x du point
 sub ecx,3
 mov r8,200 		; coordonnée en y du point
 sub r8,3
-mov r9,6
+mov r9,6        ; taille du point
 mov rax,23040
 push rax
 push 0
 push r9
 call XFillArc
 
-;couleur du point 4
-mov rdi,qword[display_name]
-mov rsi,qword[gc]
-mov edx,0xFF00FF	; Couleur du crayon ; violet
-call XSetForeground
-
-; Dessin d'un point vert sous forme d'un petit rond : coordonnées (200,250)
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov rcx,200		; coordonnée en x du point
-sub ecx,3
-mov r8,250 		; coordonnée en y du point
-sub r8,3
-mov r9,6
-mov rax,23040
-push rax
-push 0
-push r9
-call XFillArc
-
+line:
 ;couleur de la ligne 1
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
@@ -258,26 +217,6 @@ call XSetForeground
 mov dword[x1],10
 mov dword[y1],10
 mov dword[x2],10
-mov dword[y2],350
-; dessin de la ligne 1
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov ecx,dword[x1]	; coordonnée source en x
-mov r8d,dword[y1]	; coordonnée source en y
-mov r9d,dword[x2]	; coordonnée destination en x
-push qword[y2]		; coordonnée destination en y
-call XDrawLine
-
-;couleur de la ligne 2
-mov rdi,qword[display_name]
-mov rsi,qword[gc]
-mov edx,0xFFAA00	; Couleur du crayon ; orange
-call XSetForeground
-; coordonnées de la ligne 1 (noire)
-mov dword[x1],300
-mov dword[y1],50
-mov dword[x2],50
 mov dword[y2],350
 ; dessin de la ligne 1
 mov rdi,qword[display_name]
