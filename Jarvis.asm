@@ -49,9 +49,9 @@ window:		resq	1
 gc:		resq	1
 
 
-nbPoint: resb 1
-tabCoordonnee: resq 1  ; Pointeur vers le tableau de tableaux
-index:         resd 1  ; Variable pour stocker l'index lors du remplissage du tableau
+nbPoint:        resd 1
+tabCoordonnee:  resq 1  ; Pointeur vers le tableau de tableaux
+index:          resd 1
 
 section .data
 
@@ -77,40 +77,39 @@ section .text
 ;##################################################
 
 main:
-
-push rbp
+    push rbp
 
 boucle_select_nb_point:
-	mov rdi, question
-	mov rax,0
-	call printf
-	mov rdi, fmt_scanf_int
-	mov rsi, nbPoint
-	mov rax,0
-	call scanf
+    mov rdi, question
+    mov rax, 0
+    call printf
+    mov rdi, fmt_scanf_int
+    mov rsi, nbPoint
+    mov rax, 0
+    call scanf
 
-	cmp byte[nbPoint],5
-	jb error_small
-	cmp byte[nbPoint],50
-	ja error_big
-	jmp creationTabCoordonnee
+    cmp dword [nbPoint], 10
+    jb error_small
+    cmp dword [nbPoint], 50
+    ja error_big
+    jmp creationTabCoordonnee
 
 error_small:
-	mov rdi, message_error_small
-	mov rax,0
-	call printf
-	jmp boucle_select_nb_point
+    mov rdi, message_error_small
+    mov rax, 0
+    call printf
+    jmp boucle_select_nb_point
 
 error_big:
-	mov rdi, message_error_big
-	mov rax, 0
-	call printf
-	jmp boucle_select_nb_point
-	
+    mov rdi, message_error_big
+    mov rax, 0
+    call printf
+    jmp boucle_select_nb_point
 
+    
 creationTabCoordonnee:
     ; Allocation dynamique de mémoire pour le tableau de tableaux
-    mov rdi, qword [nbPoint]
+    mov rdi, [nbPoint]
     imul rdi, 2  ; Deux coordonnées (x, y) pour chaque point
     imul rdi, 4  ; Chaque coordonnée est un entier (4 octets)
     push rdi
@@ -120,25 +119,31 @@ creationTabCoordonnee:
     ; Initialiser l'index à 0
     mov dword [index], 0
     
-    ; Initialisation du compteur (cl) à zéro
-    xor cl, cl
     
-    boucleRemplissage:
-        call generateRandomNumber
-        inc cl
-        cmp cl, byte [nbPoint]
-        jb boucleRemplissage
-        jmp creationWindow
-    
-generateRandomNumber:
+    ; Initialisation du compteur (ecx) à zéro
+    xor ecx, ecx
+    mov ebx, [nbPoint]
+    add ebx, ebx ; nbPoint * 2 (coor.x ; coor.y)
+
+boucleRemplissage:
+    ; Appel de generateRandomNumber
+    mov eax, random_max 
+    sub eax, random_min
     call rand
     cmp eax, random_min
-    jb generateRandomNumber
-    cmp eax, random_max
-    ja generateRandomNumber
+    ; Calcul du reste de la division par la différence
+    xor edx, edx
+    div eax
+    ; Ajout de la borneMin pour obtenir un nombre entre min et max inclus
+    add eax, random_min
 
-    ret
-    
+    inc ecx
+    cmp ecx, ebx    ;ecx = compteur | ebx = nbPoint * 2
+    jb boucleRemplissage
+        
+        
+
+
 
 creationWindow:
 
