@@ -68,7 +68,7 @@ message_error_big: db "Error, to big",10,0
 message_error_small: db "Error, to small",10,0
 random_min equ 100  ; constante borne min pour les coordonnées des points
 random_max equ 300  ; constante borne max pour les coordonnées des points
-
+cpt: db 0
 
 section .text
 	
@@ -120,11 +120,10 @@ creationTabCoordonnee:
     mov dword [index], 0
     
     
-    ; Initialisation du compteur (ecx) à zéro
-    xor ecx, ecx
     mov ebx, [nbPoint]
     add ebx, ebx ; nbPoint * 2 (coor.x ; coor.y)
-
+    
+        
 boucleRemplissage:
     ; Appel de generateRandomNumber
     mov eax, random_max 
@@ -137,8 +136,8 @@ boucleRemplissage:
     ; Ajout de la borneMin pour obtenir un nombre entre min et max inclus
     add eax, random_min
 
-    inc ecx
-    cmp ecx, ebx    ;ecx = compteur | ebx = nbPoint * 2
+    inc dword [cpt]
+    cmp dword [cpt], ebx    ;ecx = compteur | ebx = nbPoint * 2
     jb boucleRemplissage
         
         
