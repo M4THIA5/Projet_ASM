@@ -17,6 +17,7 @@ extern XNextEvent
 ; external functions from stdio library (ld-linux-x86-64.so.2)    
 extern printf
 extern scanf
+extern rand
 extern malloc
 extern free
 extern exit
@@ -55,16 +56,19 @@ index:         resd 1  ; Variable pour stocker l'index lors du remplissage du ta
 section .data
 
 event:		times	24 dq 0
-question:   db "entrez un nombre : ",0
-fmt_print: db "Valeur : %d",10,0
-fmt_scanf_int: db "%d",0
-	message_error_big: db "Error, to big",10,0
-	message_error_small: db "Error, to small",10,0
-
 x1:	dd	0
 x2:	dd	0
 y1:	dd	0
 y2:	dd	0
+
+question:   db "entrez un nombre : ",0
+fmt_print: db "Valeur : %d",10,0
+fmt_scanf_int: db "%d",0
+message_error_big: db "Error, to big",10,0
+message_error_small: db "Error, to small",10,0
+random_min equ 100  ; constante borne min pour les coordonnées des points
+random_max equ 300  ; constante borne max pour les coordonnées des points
+
 
 section .text
 	
@@ -116,8 +120,25 @@ creationTabCoordonnee:
     ; Initialiser l'index à 0
     mov dword [index], 0
     
-    jmp creationWindow
+    ; Initialisation du compteur (cl) à zéro
+    xor cl, cl
+    
+    boucleRemplissage:
+        call generateRandomNumber
+        inc cl
+        cmp cl, byte [nbPoint]
+        jb boucleRemplissage
+        jmp creationWindow
+    
+generateRandomNumber:
+    call rand
+    cmp eax, random_min
+    jb generateRandomNumber
+    cmp eax, random_max
+    ja generateRandomNumber
 
+    ret
+    
 
 creationWindow:
 
@@ -192,7 +213,7 @@ mov rsi,qword[gc]
 mov edx,0x0000FF	; Couleur du crayon ; bleu
 call XSetForeground
 
-; Dessin d'un point vert sous forme d'un petit rond : coordonnées (200,200)
+; Dessin d'un point bleu sous forme d'un petit rond : coordonnées (200,200)
 mov rdi,qword[display_name]
 mov rsi,qword[window]
 mov rdx,qword[gc]
@@ -214,10 +235,10 @@ mov rsi,qword[gc]
 mov edx,0x000000	; Couleur du crayon ; noir
 call XSetForeground
 ; coordonnées de la ligne 1 (noire)
-mov dword[x1],10
-mov dword[y1],10
-mov dword[x2],10
-mov dword[y2],350
+mov dword[x1],100
+mov dword[y1],100
+mov dword[x2],300
+mov dword[y2],300
 ; dessin de la ligne 1
 mov rdi,qword[display_name]
 mov rsi,qword[window]
