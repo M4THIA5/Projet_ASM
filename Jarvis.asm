@@ -264,4 +264,3 @@ closeDisplay:
     call    XCloseDisplay
     xor	    rdi,rdi
     call    exit
-	
