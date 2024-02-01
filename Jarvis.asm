@@ -16,6 +16,7 @@ extern XNextEvent
 
 ; external functions from stdio library (ld-linux-x86-64.so.2)    
 extern printf
+extern exit
 extern scanf
 extern rand
 extern malloc
@@ -51,11 +52,10 @@ gc:		resq	1
 
 nbPoint:        resd 1
 tabCoordonnee:  resq 1  ; Pointeur vers le tableau de tableaux
-index:          resd 1
-
 section .data
 
 event:		times	24 dq 0
+
 x1:	dd	0
 x2:	dd	0
 y1:	dd	0
@@ -68,8 +68,7 @@ message_error_big: db "Error, to big",10,0
 message_error_small: db "Error, to small",10,0
 random_min equ 100  ; constante borne min pour les coordonnées des points
 random_max equ 300  ; constante borne max pour les coordonnées des points
-cpt: db 0
-
+index: db 0
 section .text
 	
 ;##################################################
@@ -77,8 +76,8 @@ section .text
 ;##################################################
 
 main:
-    push rbp
 
+push rbp
 boucle_select_nb_point:
     mov rdi, question
     mov rax, 0
@@ -116,14 +115,12 @@ creationTabCoordonnee:
     call malloc
     add rsp, 8
     mov qword [tabCoordonnee], rax
-    ; Initialiser l'index à 0
-    mov dword [index], 0
     
     
     mov ebx, [nbPoint]
     add ebx, ebx ; nbPoint * 2 (coor.x ; coor.y)
+    jmp boucleRemplissage
     
-        
 boucleRemplissage:
     ; Appel de generateRandomNumber
     mov eax, random_max 
@@ -136,15 +133,12 @@ boucleRemplissage:
     ; Ajout de la borneMin pour obtenir un nombre entre min et max inclus
     add eax, random_min
 
-    inc dword [cpt]
-    cmp dword [cpt], ebx    ;ecx = compteur | ebx = nbPoint * 2
+    inc dword [index]
+    
+    cmp dword [index], ebx    ;ecx = compteur | ebx = nbPoint * 2
     jb boucleRemplissage
+    
         
-        
-
-
-
-creationWindow:
 
 xor     rdi,rdi
 call    XOpenDisplay	; Création de display
@@ -210,39 +204,37 @@ jmp boucle
 ;#########################################
 dessin:
 
-point:
-;couleur du points
+;couleur du point 1
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
-mov edx,0x0000FF	; Couleur du crayon ; bleu
+mov edx,0xFF0000	; Couleur du crayon ; rouge
 call XSetForeground
 
-; Dessin d'un point bleu sous forme d'un petit rond : coordonnées (200,200)
+; Dessin d'un point rouge sous forme d'un petit rond : coordonnées (100,200)
 mov rdi,qword[display_name]
 mov rsi,qword[window]
 mov rdx,qword[gc]
-mov rcx,200		; coordonnée en x du point
+mov rcx,100		; coordonnée en x du point
 sub ecx,3
 mov r8,200 		; coordonnée en y du point
 sub r8,3
-mov r9,6        ; taille du point
+mov r9,6
 mov rax,23040
 push rax
 push 0
 push r9
 call XFillArc
 
-line:
 ;couleur de la ligne 1
 mov rdi,qword[display_name]
 mov rsi,qword[gc]
 mov edx,0x000000	; Couleur du crayon ; noir
 call XSetForeground
 ; coordonnées de la ligne 1 (noire)
-mov dword[x1],100
-mov dword[y1],100
-mov dword[x2],300
-mov dword[y2],300
+mov dword[x1],50
+mov dword[y1],50
+mov dword[x2],200
+mov dword[y2],350
 ; dessin de la ligne 1
 mov rdi,qword[display_name]
 mov rsi,qword[window]
