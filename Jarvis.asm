@@ -49,11 +49,9 @@ height:        	resd	1
 window:		resq	1
 gc:		resq	1
 
-
 nbPoint:        resd 1
 xCoordinates: resd 50  ; Tableau pour les coordonnées x
 yCoordinates: resd 50  ; Tableau pour les coordonnées y
-
 
 section .data
 
@@ -67,8 +65,8 @@ y2:	dd	0
 question:   db "entrez un nombre : ",0
 fmt_print: db "Valeur : %d",10,0
 fmt_scanf_int: db "%d",0
-message_error_big: db "Error, to big",10,0
-message_error_small: db "Error, to small",10,0
+message_error_big: db "Error, too big",10,0
+message_error_small: db "Error, too small",10,0
 random_min equ 100  ; constante borne min pour les coordonnées des points
 random_max equ 300  ; constante borne max pour les coordonnées des points
 
@@ -88,22 +86,16 @@ createDynamicArray:
 
 global generateRandomNumber
 generateRandomNumber:
-    mov r8, random_max            ; Sauvegarde de rand_max dans r8
-    sub r8, random_min             ; r8 = rand_max - rand_min
-    inc r8                  ; r8 = (rand_max - rand_min) + 1
-
-generate_random:
-    rdrand rax              ; Tente de charger un nombre aléatoire dans rax
-    jc got_random           ; Saute si rdrand a réussi
-    jmp generate_random     ; Réessaie si rdrand échoue
-
-got_random:
-    ; À ce stade, rax contient un nombre aléatoire. Nous devons l'adapter à notre plage
-    div r8                  ; Divise rax par (rand_max - rand_min + 1), quotient dans rax, reste dans rdx
-    add rdx, random_min           ; Ajoute rand_min au reste pour obtenir un nombre dans la plage [rand_min, rand_max]
-    mov rax, rdx            ; Déplace le résultat final dans rax pour le retour
-    
+    call rand             ; Appelle rand pour obtenir un nombre aléatoire dans eax
+    mov rdi, random_max
+    sub rdi, random_min
+    inc rdi               ; rdi = (random_max - random_min) + 1
+    xor rdx, rdx          ; Nettoie rdx avant la division
+    div rdi               ; eax / rdi, quotient dans eax, reste dans edx
+    add edx, random_min   ; Ajoute random_min au reste pour obtenir un nombre dans la plage [random_min, random_max]
+    mov rax, rdx          ; Déplace le résultat final dans rax pour le retour
     ret
+
 ;##################################################
 ;########### PROGRAMME PRINCIPAL ##################
 ;##################################################
