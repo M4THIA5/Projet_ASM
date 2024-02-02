@@ -51,7 +51,10 @@ gc:		resq	1
 
 
 nbPoint:        resd 1
-tabCoordonnee:  resq 1  ; Pointeur vers le tableau de tableaux
+xCoordinates: resd 50  ; Tableau pour les coordonnées x
+yCoordinates: resd 50  ; Tableau pour les coordonnées y
+
+
 section .data
 
 event:		times	24 dq 0
@@ -68,9 +71,39 @@ message_error_big: db "Error, to big",10,0
 message_error_small: db "Error, to small",10,0
 random_min equ 100  ; constante borne min pour les coordonnées des points
 random_max equ 300  ; constante borne max pour les coordonnées des points
-index: db 0
+
 section .text
-	
+
+
+global createDynamicArray
+createDynamicArray:
+    ; Paramètre : rdi = nombre d'éléments
+    ; Retour : rax = adresse du tableau alloué
+    mov rdx, rdi
+    imul rdi, 4  ; Chaque élément est un entier (4 octets)
+    push rdi
+    call malloc
+    add rsp, 8
+    ret
+
+global generateRandomNumber
+generateRandomNumber:
+    mov r8, random_max            ; Sauvegarde de rand_max dans r8
+    sub r8, random_min             ; r8 = rand_max - rand_min
+    inc r8                  ; r8 = (rand_max - rand_min) + 1
+
+generate_random:
+    rdrand rax              ; Tente de charger un nombre aléatoire dans rax
+    jc got_random           ; Saute si rdrand a réussi
+    jmp generate_random     ; Réessaie si rdrand échoue
+
+got_random:
+    ; À ce stade, rax contient un nombre aléatoire. Nous devons l'adapter à notre plage
+    div r8                  ; Divise rax par (rand_max - rand_min + 1), quotient dans rax, reste dans rdx
+    add rdx, random_min           ; Ajoute rand_min au reste pour obtenir un nombre dans la plage [rand_min, rand_max]
+    mov rax, rdx            ; Déplace le résultat final dans rax pour le retour
+    
+    ret
 ;##################################################
 ;########### PROGRAMME PRINCIPAL ##################
 ;##################################################
@@ -91,7 +124,7 @@ boucle_select_nb_point:
     jb error_small
     cmp dword [nbPoint], 50
     ja error_big
-    jmp creationTabCoordonnee
+    jmp tableauCoordonnees
 
 error_small:
     mov rdi, message_error_small
@@ -106,40 +139,63 @@ error_big:
     jmp boucle_select_nb_point
 
     
-creationTabCoordonnee:
-    ; Allocation dynamique de mémoire pour le tableau de tableaux
+tableauCoordonnees:
+    ; Appel de createDynamicArray pour allouer le tableau xCoordinates
     mov rdi, [nbPoint]
-    imul rdi, 2  ; Deux coordonnées (x, y) pour chaque point
-    imul rdi, 4  ; Chaque coordonnée est un entier (4 octets)
-    push rdi
-    call malloc
-    add rsp, 8
-    mov qword [tabCoordonnee], rax
-    
-    
-    mov ebx, [nbPoint]
-    add ebx, ebx ; nbPoint * 2 (coor.x ; coor.y)
-    jmp boucleRemplissage
-    
-boucleRemplissage:
-    ; Appel de generateRandomNumber
-    mov eax, random_max 
-    sub eax, random_min
-    call rand
-    cmp eax, random_min
-    ; Calcul du reste de la division par la différence
-    xor edx, edx
-    div eax
-    ; Ajout de la borneMin pour obtenir un nombre entre min et max inclus
-    add eax, random_min
+    call createDynamicArray
+    ; Stockage de l'adresse du tableau dans xCoordinates
+    mov qword [xCoordinates], rax
 
-    inc dword [index]
+    ; Appel de createDynamicArray pour allouer le tableau yCoordinates
+    mov rdi, [nbPoint]
+    call createDynamicArray
+    ; Stockage de l'adresse du tableau dans yCoordinates
+    mov qword [yCoordinates], rax
     
-    cmp dword [index], ebx    ;ecx = compteur | ebx = nbPoint * 2
-    jb boucleRemplissage
+;############################ Début du remplissage du tableau xCoordinates
+
+; Initialisation de l'index pour la boucle
+xor rcx, rcx             ; rcx sera notre compteur/index
+
+fill_xCoordinates:
+    cmp rcx, [nbPoint]      ; Compare l'index avec nbPoint
+    jge end_fill_x          ; Si rcx >= nbPoint, la boucle est terminée
+
+    ; Génération d'un nombre aléatoire pour xCoordinates
+    call generateRandomNumber
     
+    mov rdi, fmt_print
+    mov rsi, 123456789   ; Valeur de test
+    xor rax, rax
+    call printf
+    
+    mov rdi, [xCoordinates] ; Récupère le pointeur vers xCoordinates
+    mov [rdi + rcx*4], eax  ; Stocke la valeur aléatoire à la position actuelle
+
+    inc rcx                 ; Incrémente l'index
+    jmp fill_xCoordinates   ; Boucle
+
+end_fill_x:
+
+xor rcx, rcx             ; Réinitialise l'index pour la boucle
+
+fill_yCoordinates:
+    cmp rcx, [nbPoint]      ; Compare l'index avec nbPoint
+    jge end_fill_y          ; Si rcx >= nbPoint, la boucle est terminée
+
+    ; Génération d'un nombre aléatoire pour yCoordinates
+    call generateRandomNumber
+    mov rdi, [yCoordinates] ; Récupère le pointeur vers yCoordinates
+    mov [rdi + rcx*4], eax  ; Stocke la valeur aléatoire à la position actuelle
+
+    inc rcx                 ; Incrémente l'index
+    jmp fill_yCoordinates   ; Boucle
+
+end_fill_y:
+    
+    
+
         
-
 xor     rdi,rdi
 call    XOpenDisplay	; Création de display
 mov     qword[display_name],rax	; rax=nom du display
@@ -262,5 +318,11 @@ closeDisplay:
     mov     rax,qword[display_name]
     mov     rdi,rax
     call    XCloseDisplay
+    
+    mov rdi, qword [xCoordinates]
+    call free
+    mov rdi, qword [yCoordinates]
+    call free
+    
     xor	    rdi,rdi
     call    exit
