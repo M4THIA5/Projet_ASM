@@ -48,8 +48,8 @@ window:		resq	1
 gc:		resq	1
 
 
-xCoordinates resd 25  ; Réserve de l'espace pour un pointeur
-yCoordinates resd 25  ; Réserve de l'espace pour un pointeur
+xCoordinates resd 50  ; Réserve de l'espace pour un pointeur
+yCoordinates resd 50  ; Réserve de l'espace pour un pointeur
 
 section .data
 
@@ -62,9 +62,9 @@ y2:	dd	0
 
 fmt_print: db "Valeur : %d",10,0
 fmt_scanf_int: db "%d",0
-nbPoint equ 25
-random_min equ 100  ; constante borne min pour les coordonnées des points
-random_max equ 300  ; constante borne max pour les coordonnées des points
+nbPoint equ 50
+random_min equ 50  ; constante borne min pour les coordonnées des points
+random_max equ 350  ; constante borne max pour les coordonnées des points
 
 section .text
 
