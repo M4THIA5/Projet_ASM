@@ -80,6 +80,25 @@ generateRandomNumber:
     
     mov rax, rdx          ; Déplace le résultat final dans rax pour le retour
     ret
+    
+global minInTab
+minInTab:
+    xor ebx, ebx
+    mov ecx, edi
+    mov eax, [ecx] ; Initialise eax à la première valeur du tableau
+    
+    boucleTableau:
+        cmp ebx, nbPoint
+        jge fin_boucleTableau
+        cmp eax, [ecx + ebx*DWORD]
+        jle suite_boucle
+        mov eax, [ecx + ebx*DWORD]
+        suite_boucle:
+        inc ebx
+        jmp boucleTableau
+    fin_boucleTableau:
+    ret
+    
 
 ;##################################################
 ;########### PROGRAMME PRINCIPAL ##################
@@ -95,7 +114,7 @@ xor ebx, ebx             ; rcx sera notre compteur/index
 
 fill_Coordinates:
     cmp ebx, nbPoint  ; Vérifie si on a rempli 50 éléments
-    jge createWindow
+    jge selectMin
 
     ; Génération d'une valeur aléatoire dans eax
     call generateRandomNumber
@@ -109,6 +128,11 @@ fill_Coordinates:
     
     inc ebx  ; Incrémente l'index pour le prochain élément
     jmp fill_Coordinates
+
+selectMin:
+    mov rdi, xCoordinates
+    call minInTab
+    jmp createWindow
     
 createWindow:
         
@@ -207,25 +231,6 @@ inc ebx
 jmp drawPoint
 end_draw:
 
-;couleur de la ligne 1
-mov rdi,qword[display_name]
-mov rsi,qword[gc]
-mov edx,0x000000	; Couleur du crayon ; noir
-call XSetForeground
-; coordonnées de la ligne 1 (noire)
-mov dword[x1],50
-mov dword[y1],50
-mov dword[x2],200
-mov dword[y2],350
-; dessin de la ligne 1
-mov rdi,qword[display_name]
-mov rsi,qword[window]
-mov rdx,qword[gc]
-mov ecx,dword[x1]	; coordonnée source en x
-mov r8d,dword[y1]	; coordonnée source en y
-mov r9d,dword[x2]	; coordonnée destination en x
-push qword[y2]		; coordonnée destination en y
-call XDrawLine
 
 
 ; ############################
